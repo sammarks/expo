@@ -20,18 +20,65 @@ UM_EXPORT_MODULE(ExpoFirebaseApp);
 {
   _moduleRegistry = moduleRegistry;
   _constants = [moduleRegistry getModuleImplementingProtocol:@protocol(UMConstantsInterface)];
-  FIROptions* firOptions = [self.class firOptionsWithGoogleServicesFile:_constants.constants[@"googleServicesFile"]];
+  FIROptions* firOptions = [self.class firOptionsWithGoogleServicesFile:self.googleServicesFile];
   [self.class updateFirAppWithOptions:firOptions name:nil completion:^(BOOL success) {
     // nop
     /*if (!success) {
       reject(@"ERR_FIREBASE_APP", @"Failed to initialize Firebase App", nil);
     }*/
   }];
+  
+  // In the Expo client, also initialize a Firebase app called "expo".
+  // This app is used by the FaceDetector module when the default app is not available.
+  NSString* appOwnership = _constants ? _constants.constants[@"appOwnership"] : nil;
+  if ([@"expo" isEqualToString: appOwnership]) {
+    FIROptions* expoFirOptions = [self.class firOptionsWithGoogleServicesFile:self.googleServicesFileFromBundle];
+    [self.class updateFirAppWithOptions:expoFirOptions name:@"expo" completion:^(BOOL success) {
+      // nop
+      /*if (!success) {
+        reject(@"ERR_FIREBASE_APP", @"Failed to initialize Firebase App", nil);
+      }*/
+    }];
+  }
+}
+
+// TODO - Hein, created a Scoped class that overrides the googleServicesFile
+// and loads from manifest when possible?
+- (nullable NSDictionary*)googleServicesFile
+{
+  NSString* appOwnership = _constants ? _constants.constants[@"appOwnership"] : nil;
+  if ([@"expo" isEqualToString: appOwnership]) {
+    return self.googleServicesFileFromManifest;
+  } else {
+    return self.googleServicesFileFromBundle;
+  }
+}
+
+- (nullable NSDictionary*)googleServicesFileFromBundle
+{
+  NSString *path = [[NSBundle mainBundle] pathForResource:@"GoogleService-Info" ofType:@"plist"];
+  if (!path) return nil;
+  NSDictionary *plist = [[NSDictionary alloc] initWithContentsOfFile:path];
+  return plist;
+}
+
+- (nullable NSDictionary*)googleServicesFileFromManifest
+{
+  // load GoogleService-Info.plist from manifest
+  if (_constants == nil) return nil;
+  NSDictionary* manifest = _constants.constants[@"manifest"];
+  NSDictionary* ios = manifest ? manifest[@"ios"] : nil;
+  NSString* googleServicesFile = ios ? ios[@"googleServicesFile"] : nil;
+  if (!googleServicesFile) return nil;
+  NSData *data = [[NSData alloc] initWithBase64EncodedString:googleServicesFile options:0];
+  NSError* error;
+  NSDictionary* plist = [NSPropertyListSerialization propertyListWithData:data options:NSPropertyListImmutable format:nil error:&error];
+  return plist;
 }
 
 - (NSDictionary *)constantsToExport
 {
-  FIROptions* firOptions = [self.class firOptionsWithGoogleServicesFile:self->_constants.constants[@"googleServicesFile"]];
+  FIROptions* firOptions = [self.class firOptionsWithGoogleServicesFile:self.googleServicesFile];
   if (firOptions) {
     return @{
       @"DEFAULT_OPTIONS": [self.class firOptionsToJSON:firOptions]
@@ -66,7 +113,7 @@ UM_EXPORT_METHOD_AS(initializeAppAsync,
   [UMUtilities performSynchronouslyOnMainThread:^{
     FIROptions* firOptions = config
       ? [self.class firOptionsWithJSON:config]
-      : [self.class firOptionsWithGoogleServicesFile:self->_constants.constants[@"googleServicesFile"]];
+      : [self.class firOptionsWithGoogleServicesFile:self.googleServicesFile];
     [self.class updateFirAppWithOptions:firOptions name:name completion:^(BOOL success) {
       if (success) {
         resolve([NSNull null]);

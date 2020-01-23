@@ -14,7 +14,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)userInterfaceIdiom;
 - (BOOL)isDevice;
 - (NSArray<NSString *> *)systemFontNames;
-- (nullable NSDictionary*)googleServicesFile;
 
 + (NSString *)devicePlatform;
 + (NSString *)deviceModel;
