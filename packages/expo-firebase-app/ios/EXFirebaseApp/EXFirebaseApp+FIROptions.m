@@ -104,10 +104,27 @@
       }
     }
 
-  // Handle custom apps
+  // Handle custom app names
   } else {
-    // TODO
-    completion(NO);
+    FIRApp* app = [FIRApp appNamed:name];
+    if (!options) {
+      if (app) {
+        [app deleteApp:completion];
+        return;
+      }
+    } else {
+      if (app) {
+        if (![self.class firOptionsIsEqualTo:app.options compareTo:options]) {
+          [app deleteApp:^(BOOL success) {
+            [FIRApp configureWithName:name options:options];
+            completion(YES);
+          }];
+          return;
+        }
+      } else {
+        [FIRApp configureWithName:name options:options];
+      }
+    }
   }
   completion(YES);
 }
