@@ -1,6 +1,8 @@
 import { UnavailabilityError } from '@unimodules/core';
 import ExpoFirebaseApp from './ExpoFirebaseApp';
 import { FirebaseOptions } from './FirebaseApp.types';
+export { FirebaseOptions } from './FirebaseApp.types';
+export * from './GoogleServices';
 
 export const { DEFAULT_OPTIONS } = ExpoFirebaseApp;
 

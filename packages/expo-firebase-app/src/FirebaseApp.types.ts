@@ -6,4 +6,5 @@ export interface FirebaseOptions {
   messagingSenderId: string;
   storageBucket: string;
   projectId: string;
+  authDomain: string;
 }

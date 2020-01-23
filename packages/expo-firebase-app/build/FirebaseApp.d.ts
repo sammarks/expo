@@ -1,4 +1,6 @@
 import { FirebaseOptions } from './FirebaseApp.types';
+export { FirebaseOptions } from './FirebaseApp.types';
+export * from './GoogleServices';
 export declare const DEFAULT_OPTIONS: any;
 declare class FirebaseApp {
     /**
@@ -40,4 +42,3 @@ export declare function getAppAsync(name?: string): Promise<FirebaseApp>;
  * Retrieves all initialized Firebase app instances.
  */
 export declare function getAppsAsync(): Promise<FirebaseApp[]>;
-export {};
