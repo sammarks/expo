@@ -58,6 +58,7 @@
   if (options.projectID) [json setValue:options.projectID forKey:@"projectId"];
   if (options.storageBucket) [json setValue:options.storageBucket forKey:@"storageBucket"];
   if (options.trackingID) [json setValue:options.trackingID forKey:@"trackingId"];
+  if (options.projectID) [json setValue:[NSString stringWithFormat:@"%@.firebaseapp.com", options.projectID] forKey:@"authDomain"];
 
   return json;
 }
