@@ -18,12 +18,11 @@ This API is pre-installed in [managed](../../introduction/managed-vs-bare/#manag
 ## API
 
 ```js
-import { ScreenOrientation } from 'expo';
+import * as ScreenOrientation from 'expo-screen-orientation';
 ```
 
 ### Methods
 
-- [`ScreenOrientation.allowAsync(orientationLock)`](#screenorientationallowasyncorientationlock)
 - [`ScreenOrientation.lockAsync(orientationLock)`](#screenorientationlockasyncorientationlock)
 - [`ScreenOrientation.lockPlatformAsync(platformInfo)`](#screenorientationlockplatformasyncplatforminfo)
 - [`ScreenOrientation.unlockAsync()`](#screenorientationunlockasync)
@@ -59,26 +58,6 @@ import { ScreenOrientation } from 'expo';
 
 ## Methods
 
-### `ScreenOrientation.allowAsync(orientationLock)`
-
-Deprecated in favor of `ScreenOrientation.lockAsync`. Allow a screen orientation.
-
-#### Arguments
-
-- **orientation (_OrientationLock_)** -- The orientation lock to apply. See the [`OrientationLock`](#screenorientationorientationlock) enum for possible values.
-
-#### Returns
-
-Returns a promise with `void` value, resolving when the orientation is set.
-
-#### Example
-
-```javascript
-function changeScreenOrientation() {
-  await ScreenOrientation.allowAsync(ScreenOrientation.Orientation.LANDSCAPE);
-}
-```
-
 ### `ScreenOrientation.lockAsync(orientationLock)`
 
 Lock the screen orientation to a particular OrientationLock.
@@ -95,6 +74,7 @@ Returns a promise with `void` value, resolving when the orientation is set.
 
 - `ERR_SCREEN_ORIENTATION_INVALID_ORIENTATION_LOCK` - an invalid [`OrientationLock`](#screenorientationorientationlock) was passed in.
 - `ERR_SCREEN_ORIENTATION_UNSUPPORTED_ORIENTATION_LOCK` - the platform does not support the orientation lock policy.
+- `ERR_SCREEN_ORIENTATION_MISSING_ACTIVITY` - could not get the current activity (**Android only**).
 
 #### Example
 
@@ -116,12 +96,17 @@ Returns a promise with `void` value, resolving when the orientation is set and r
 
 #### Error Codes
 
-- `ERR_SCREEN_ORIENTATION_INVALID_ORIENTATION_LOCK` - an invalid [`OrientationLock`](#screenorientationorientationlock) was passed in.
+- `ERR_SCREEN_ORIENTATION_INVALID_ORIENTATION_LOCK` - an invalid [`OrientationLock`](#screenorientationorientationlock) was passed in (**isOnly**).
 - `ERR_SCREEN_ORIENTATION_UNSUPPORTED_ORIENTATION_LOCK` - the platform does not support the orientation lock policy.
+- `ERR_SCREEN_ORIENTATION_MISSING_ACTIVITY` - could not get the current activity (**Android only**).
 
 ### `ScreenOrientation.unlockAsync()`
 
 Sets the screen orientation back to the `OrientationLock.DEFAULT` policy.
+
+#### Error Codes
+
+- `ERR_SCREEN_ORIENTATION_MISSING_ACTIVITY` - could not get the current activity (**Android only**).
 
 #### Returns
 
@@ -135,6 +120,11 @@ Gets the current screen orientation.
 
 Returns a promise that resolves to an [`OrientationInfo`](#screenorientationorientationinfo) object value that reflects the current screen orientation.
 
+#### Error Codes
+
+- `ERR_SCREEN_ORIENTATION_GET_ORIENTATION_LOCK` - An unknown error occurred when trying to get the system lock. (**Android only**)
+- `ERR_SCREEN_ORIENTATION_MISSING_ACTIVITY` - could not get the current activity (**Android only**).
+
 ### `ScreenOrientation.getOrientationLockAsync()`
 
 Gets the current screen orientation lock type.
@@ -143,6 +133,10 @@ Gets the current screen orientation lock type.
 
 Returns a promise with an [`OrientationLock`](#screenorientationorientationlock) value.
 
+#### Error Codes
+
+- `ERR_SCREEN_ORIENTATION_MISSING_ACTIVITY` - could not get the current activity (**Android only**).
+
 ### `ScreenOrientation.getPlatformOrientationLockAsync()`
 
 Gets the platform specific screen orientation lock type.
@@ -150,6 +144,11 @@ Gets the platform specific screen orientation lock type.
 #### Returns
 
 Returns a promise with a [`PlatformOrientationInfo`](#screenorientationplatformorientationinfo) value.
+
+#### Error Codes
+
+- `ERR_SCREEN_ORIENTATION_GET_PLATFORM_ORIENTATION_LOCK`
+- `ERR_SCREEN_ORIENTATION_MISSING_ACTIVITY` - could not get the current activity (**Android only**).
 
 ### `ScreenOrientation.supportsOrientationLockAsync(orientationLock)`
 
@@ -161,7 +160,7 @@ Returns a promise that resolves to a `boolean` value that reflects whether or no
 
 ### `ScreenOrientation.addOrientationChangeListener(listener)`
 
-Invokes the `listener` function when the screen orientation changes.
+Invokes the `listener` function when the screen orientation changes from `portrait` to `landscape` or from `landscape` to `portrait`. For example, it won't be invoked when screen orientation change from `portrait up` to `portrait down`, but it will be called when there was a change from `portrait up` to `landscape left`.
 
 #### Arguments
 
@@ -190,10 +189,8 @@ Unsubscribes the listener associated with the `subscription` object from all ori
 ### `ScreenOrientation.Orientation`
 
 - **`Orientation.UNKNOWN`** - An unknown screen orientation. For example, the device is flat, perhaps on a table.
-- **`Orientation.PORTRAIT`** - Portrait interface orientation (right side up or upside down).
 - **`Orientation.PORTRAIT_UP`** - Right-side up portrait interface orientation.
 - **`Orientation.PORTRAIT_DOWN`** - Upside down portrait interface orientation.
-- **`Orientation.LANDSCAPE`** - Landscape interface orientation (right or left).
 - **`Orientation.LANDSCAPE_LEFT`** - Left landscape interface orientation.
 - **`Orientation.LANDSCAPE_RIGHT`** - Right landscape interface orientation.
 
@@ -211,6 +208,8 @@ An enum whose values can be passed to the [`lockAsync`](#screenorientationlockas
 - **`OrientationLock.LANDSCAPE_RIGHT`** -- Right landscape only.
 - **`OrientationLock.OTHER`** -- A platform specific orientation. This is not a valid policy that can be applied in [`lockAsync`](#screenorientationlockasyncorientationlock).
 - **`OrientationLock.UNKNOWN`** -- An unknown screen orientation lock. This is not a valid policy that can be applied in [`lockAsync`](#screenorientationlockasyncorientationlock).
+
+> **Note** `OrientationLock.ALL` and `OrientationLock.PORTRAIT` are invalid on devices which not support `OrientationLock.PORTRAIT_DOWN`.
 
 ### `ScreenOrientation.SizeClassIOS`
 
@@ -270,7 +269,10 @@ A [subscription object](https://github.com/expo/expo/blob/master/packages/expo-r
 
 ## Error Codes
 
-| Code                                                | Description                                                                                      |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| ERR_SCREEN_ORIENTATION_UNSUPPORTED_ORIENTATION_LOCK | The platform does not support the [`OrientationLock`](#screenorientationorientationlock) policy. |
-| ERR_SCREEN_ORIENTATION_INVALID_ORIENTATION_LOCK     | An invalid [`OrientationLock`](#screenorientationorientationlock) was passed in.                 |
+| Code                                                 | Description                                                                                      |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| ERR_SCREEN_ORIENTATION_UNSUPPORTED_ORIENTATION_LOCK  | The platform does not support the [`OrientationLock`](#screenorientationorientationlock) policy. |
+| ERR_SCREEN_ORIENTATION_INVALID_ORIENTATION_LOCK      | An invalid [`OrientationLock`](#screenorientationorientationlock) was passed in.                 |
+| ERR_SCREEN_ORIENTATION_GET_ORIENTATION_LOCK          | An unknown error occurred when trying to get the system lock. (**Android only**)                 |
+| ERR_SCREEN_ORIENTATION_GET_PLATFORM_ORIENTATION_LOCK | An unknown error occurred when trying to get the system lock. (**Android only**)                 |
+| ERR_SCREEN_ORIENTATION_MISSING_ACTIVITY              | Could not get the current activity. (**Android only**)                                           |
