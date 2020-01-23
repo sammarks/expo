@@ -1,6 +1,6 @@
 ---
 title: ScreenOrientation
-sourceCodeUrl: "https://github.com/expo/expo/tree/sdk-36/packages/expo/src/ScreenOrientation"
+sourceCodeUrl: 'https://github.com/expo/expo/tree/sdk-36/packages/expo/src/ScreenOrientation'
 ---
 
 Screen Orientation is defined as the orientation in which graphics are painted on the device. For example, the figure below has a device in a vertical and horizontal physical orientation, but a portrait screen orientation. For physical device orientation, see the orientation section of [Device Motion](../devicemotion/).
@@ -14,6 +14,24 @@ On both iOS and Android platforms, changes to the screen orientation will overri
 ## Installation
 
 This API is pre-installed in [managed](../../introduction/managed-vs-bare/#managed-workflow) apps. It is not yet available for [bare](../../introduction/managed-vs-bare/#bare-workflow) React Native apps.
+
+### Warning
+
+This module needs additional configuration to work properly on iPads. Unfortunately, it will disable support for the split view.
+
+#### Managed workflow
+
+Open your app.json and add the following inside of the "expo" field:
+
+```json
+"ios": {
+    "requireFullScreen": true,
+}
+```
+
+#### Bare workflow
+
+Tick the `Requires Full Screen` checkbox in XCode. It should be located under `Project Target > General > Deployment Info`.
 
 ## API
 
