@@ -50,7 +50,7 @@ UM_EXPORT_MODULE(ExpoFaceDetector);
 
 UM_EXPORT_METHOD_AS(detectFaces, detectFaces:(nonnull NSDictionary *)options resolver:(UMPromiseResolveBlock)resolve rejecter:(UMPromiseRejectBlock)reject)
 {
-  if (![FIRApp defaultApp]) {
+  if (![FIRApp defaultApp] && ![FIRApp appNamed:@"expo"]) {
     reject(@"E_FACE_DETECTION_FAILED", @"Firebase is not configured", nil);
     return;
   }

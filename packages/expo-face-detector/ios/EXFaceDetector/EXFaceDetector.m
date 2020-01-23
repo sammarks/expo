@@ -74,8 +74,17 @@
   }
 }
 
++ (FIRVision*) vision
+{
+  FIRApp* app = [FIRApp defaultApp];
+  if (!app) {
+    app = [FIRApp appNamed:@"expo"];
+  }
+  return [FIRVision visionForApp:app];
+}
+
 + (FIRVisionFaceDetector *)detectorForOptions:(FIRVisionFaceDetectorOptions *)options
 {
-  return [[FIRVision vision] faceDetectorWithOptions:options];
+  return [self.class.vision faceDetectorWithOptions:options];
 }
 @end
