@@ -106,7 +106,7 @@ export async function test({ describe, xdescribe, it, xit, expect }) {
         let error = null;
         try {
           const app = await FirebaseApp.getAppAsync(DEFAULT_APP_NAME);
-          expect(app.name).toBe(app.DEFAULT_APP_NAME);
+          expect(app.name).toBe(DEFAULT_APP_NAME);
         } catch (e) {
           error = e;
         }
