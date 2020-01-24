@@ -9,6 +9,8 @@ const DEFAULT_APP_NAME = Platform.select({
   android: '[DEFAULT]',
 });
 
+const SANDBOX_APP_PREFIX = '__sandbox';
+
 function getTestSuiteFirebaseOptions() {
   if (Platform.OS === 'android') {
     const googleServicesJson = require('../google-services.json');
@@ -41,7 +43,11 @@ function expectFirebaseOptions(expect, options1, options2) {
   expect(options1.authDomain).toBe(options2.authDomain);
 }
 
-export async function test({ describe, beforeEach, beforeAll, afterAll, it, expect }) {
+export async function test({ describe, xdescribe, it, xit, expect }) {
+  const isSandboxed = Constants.appOwnership === 'expo';
+  //const describeSandboxed = isSandboxed ? describe : xdescribe;
+  const itSandboxed = isSandboxed ? it : xit;
+
   describe(name, () => {
     /*beforeAll(async () => {
       await FirebaseApp.initializeAppAsync();
@@ -52,25 +58,88 @@ export async function test({ describe, beforeEach, beforeAll, afterAll, it, expe
     });*/
 
     describe('getAppAsync()', async () => {
-      it(`returns default Firebase app`, async () => {
+      it(`returns the default app`, async () => {
         let error = null;
         try {
           const app = await FirebaseApp.getAppAsync();
-          expect(app.name).toBe(DEFAULT_APP_NAME);
+          expect(app.isDefault).toBe(true);
         } catch (e) {
           error = e;
         }
         expect(error).toBeNull();
+      });
+      it(`returns the default app by name its name`, async () => {
+        let error = null;
+        try {
+          const { name } = await FirebaseApp.getAppAsync();
+          const app = await FirebaseApp.getAppAsync(name);
+          expect(app.name).toBe(name);
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeNull();
+      });
+      it(`throws when an invalid app name is specified`, async () => {
+        let error = null;
+        try {
+          await FirebaseApp.getAppAsync('123ThisAppNameCertainlyDoesntExist');
+        } catch (e) {
+          error = e;
+        }
+        expect(error).not.toBeNull();
+      });
+      it(`returns a (non) sandboxed app`, async () => {
+        let error = null;
+        try {
+          const app = await FirebaseApp.getAppAsync();
+          if (isSandboxed) {
+            expect(app.name.substring(0, SANDBOX_APP_PREFIX.length)).toBe(SANDBOX_APP_PREFIX);
+          } else {
+            expect(app.name.substring(0, SANDBOX_APP_PREFIX.length)).not.toBe(SANDBOX_APP_PREFIX);
+          }
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeNull();
+      });
+      it(`allows/disallowes access to the system default app`, async () => {
+        let error = null;
+        try {
+          const app = await FirebaseApp.getAppAsync(DEFAULT_APP_NAME);
+          expect(app.name).toBe(app.DEFAULT_APP_NAME);
+        } catch (e) {
+          error = e;
+        }
+        if (isSandboxed) {
+          expect(error).not.toBeNull();
+        } else {
+          expect(error).toBeNull();
+        }
       });
     });
 
     describe('getAppsAsync()', async () => {
-      it(`returns all Firebase apps`, async () => {
+      it(`returns 1 firebase app`, async () => {
         let error = null;
         try {
           const apps = await FirebaseApp.getAppsAsync();
-          expect(apps.length >= 1).toBe(true);
-          //expect(apps[0].name).toBe(DEFAULT_APP_NAME);
+          expect(apps.length).toBe(1);
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeNull();
+      });
+      it(`returns a (non) sandboxed app`, async () => {
+        let error = null;
+        try {
+          const apps = await FirebaseApp.getAppsAsync();
+          expect(apps.length).toBe(1);
+          const app = apps[0];
+          if (isSandboxed) {
+            expect(app.name.substring(0, SANDBOX_APP_PREFIX.length)).toBe(SANDBOX_APP_PREFIX);
+          } else {
+            expect(app.name.substring(0, SANDBOX_APP_PREFIX.length)).not.toBe(SANDBOX_APP_PREFIX);
+          }
         } catch (e) {
           error = e;
         }
@@ -78,7 +147,7 @@ export async function test({ describe, beforeEach, beforeAll, afterAll, it, expe
       });
     });
 
-    describe('getAppOptions()', async () => {
+    /*describe('getAppOptions()', async () => {
       it(`returns valid firebase options`, async () => {
         let error = null;
         try {
@@ -97,29 +166,21 @@ export async function test({ describe, beforeEach, beforeAll, afterAll, it, expe
         }
         expect(error).toBeNull();
       });
-    });
+    });*/
 
     describe('DEFAULT_OPTIONS', async () => {
       it(`returns the default firebase options`, async () => {
         let error = null;
         try {
           const { DEFAULT_OPTIONS } = FirebaseApp;
-
-          // On the Expo client, use the firebase-options from the test-suite app
-          if (Constants.appOwnership === 'expo') {
-            expectFirebaseOptions(expect, DEFAULT_OPTIONS, getTestSuiteFirebaseOptions());
-
-            // On other build, verify that all the values exist
-          } else {
-            expect(DEFAULT_OPTIONS.appId).not.toBeNull();
-            expect(DEFAULT_OPTIONS.messagingSenderId).not.toBeNull();
-            expect(DEFAULT_OPTIONS.apiKey).not.toBeNull();
-            expect(DEFAULT_OPTIONS.projectId).not.toBeNull();
-            expect(DEFAULT_OPTIONS.clientId).not.toBeNull();
-            expect(DEFAULT_OPTIONS.storageBucket).not.toBeNull();
-            expect(DEFAULT_OPTIONS.databaseURL).not.toBeNull();
-            expect(DEFAULT_OPTIONS.authDomain).not.toBeNull();
-          }
+          expect(DEFAULT_OPTIONS.appId).not.toBeNull();
+          expect(DEFAULT_OPTIONS.messagingSenderId).not.toBeNull();
+          expect(DEFAULT_OPTIONS.apiKey).not.toBeNull();
+          expect(DEFAULT_OPTIONS.projectId).not.toBeNull();
+          expect(DEFAULT_OPTIONS.clientId).not.toBeNull();
+          expect(DEFAULT_OPTIONS.storageBucket).not.toBeNull();
+          expect(DEFAULT_OPTIONS.databaseURL).not.toBeNull();
+          expect(DEFAULT_OPTIONS.authDomain).not.toBeNull();
         } catch (e) {
           error = e;
         }
@@ -130,8 +191,18 @@ export async function test({ describe, beforeEach, beforeAll, afterAll, it, expe
         try {
           const { DEFAULT_OPTIONS } = FirebaseApp;
           const app = await FirebaseApp.getAppAsync();
-          const options = await app.getOptionsAsync();
+          const { options } = app;
           expectFirebaseOptions(expect, DEFAULT_OPTIONS, options);
+        } catch (e) {
+          error = e;
+        }
+        expect(error).toBeNull();
+      });
+      itSandboxed(`returns the firebase options from the test-suite`, async () => {
+        let error = null;
+        try {
+          const { DEFAULT_OPTIONS } = FirebaseApp;
+          expectFirebaseOptions(expect, DEFAULT_OPTIONS, getTestSuiteFirebaseOptions());
         } catch (e) {
           error = e;
         }
