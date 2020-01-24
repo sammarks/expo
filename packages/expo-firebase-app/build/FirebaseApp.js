@@ -1,10 +1,14 @@
 import { UnavailabilityError } from '@unimodules/core';
 import ExpoFirebaseApp from './ExpoFirebaseApp';
 export * from './GoogleServices';
-export const { DEFAULT_OPTIONS } = ExpoFirebaseApp;
+export const { DEFAULT_OPTIONS, DEFAULT_NAME } = ExpoFirebaseApp;
 class FirebaseApp {
-    constructor(name) {
-        this.name = name;
+    constructor(config) {
+        this.name = config.name;
+        this.options = config.options;
+    }
+    get isDefault() {
+        return this.name === DEFAULT_NAME;
     }
     /**
      * Delete the Firebase app instance.
@@ -15,19 +19,7 @@ class FirebaseApp {
             throw new UnavailabilityError('expo-firebase-app', 'deleteAppAsync');
         }
         // @ts-ignore
-        return ExpoFirebaseApp.deleteAppAsync(this.name);
-    }
-    /**
-     * Returns the (read-only) configuration options for this app. These are the original parameters
-     * the app was initialized with.
-     */
-    getOptionsAsync() {
-        // @ts-ignore
-        if (!ExpoFirebaseApp.getAppOptionsAsync) {
-            throw new UnavailabilityError('expo-firebase-app', 'getAppOptionsAsync');
-        }
-        // @ts-ignore
-        return ExpoFirebaseApp.getAppOptionsAsync(this.name);
+        return ExpoFirebaseApp.deleteAppAsync(this._name);
     }
 }
 /**
@@ -46,9 +38,8 @@ export async function initializeAppAsync(options, name) {
     if (!ExpoFirebaseApp.initializeAppAsync) {
         throw new UnavailabilityError('expo-firebase-app', 'initializeAppAsync');
     }
-    // @ts-ignore
-    const appName = await ExpoFirebaseApp.initializeAppAsync(options, name);
-    return new FirebaseApp(appName);
+    const result = await ExpoFirebaseApp.initializeAppAsync(options, name);
+    return new FirebaseApp(result);
 }
 /**
  * Retrieves a Firebase app instance.
@@ -62,9 +53,8 @@ export async function getAppAsync(name) {
     if (!ExpoFirebaseApp.getAppAsync) {
         throw new UnavailabilityError('expo-firebase-app', 'getAppAsync');
     }
-    // @ts-ignore
-    const appName = await ExpoFirebaseApp.getAppAsync(name);
-    return new FirebaseApp(appName);
+    const result = await ExpoFirebaseApp.getAppAsync(name);
+    return new FirebaseApp(result);
 }
 /**
  * Retrieves all initialized Firebase app instances.
@@ -75,7 +65,7 @@ export async function getAppsAsync() {
         throw new UnavailabilityError('expo-firebase-app', 'getAppsAsync');
     }
     // @ts-ignore
-    const appNames = await ExpoFirebaseApp.getAppsAsync();
-    return appNames.map(appName => new FirebaseApp(appName));
+    const results = await ExpoFirebaseApp.getAppsAsync();
+    return results.map(result => new FirebaseApp(result));
 }
 //# sourceMappingURL=FirebaseApp.js.map

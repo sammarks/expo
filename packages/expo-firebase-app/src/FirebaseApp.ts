@@ -4,16 +4,31 @@ import { FirebaseOptions } from './FirebaseApp.types';
 export { FirebaseOptions } from './FirebaseApp.types';
 export * from './GoogleServices';
 
-export const { DEFAULT_OPTIONS } = ExpoFirebaseApp;
+export const { DEFAULT_OPTIONS, DEFAULT_NAME } = ExpoFirebaseApp;
+
+interface FirebaseAppConfig {
+  name: string;
+  options: FirebaseOptions;
+}
 
 class FirebaseApp {
   /**
-   * The (read-only) name for this app.
+   * The (read-only) options for this app.
    */
-  public readonly name: string;
+  public name: string;
 
-  constructor(name: string) {
-    this.name = name;
+  /**
+   * The (read-only) options for this app.
+   */
+  public readonly options: FirebaseOptions;
+
+  constructor(config: FirebaseAppConfig) {
+    this.name = config.name;
+    this.options = config.options;
+  }
+
+  get isDefault(): boolean {
+    return this.name === DEFAULT_NAME;
   }
 
   /**
@@ -25,21 +40,21 @@ class FirebaseApp {
       throw new UnavailabilityError('expo-firebase-app', 'deleteAppAsync');
     }
     // @ts-ignore
-    return ExpoFirebaseApp.deleteAppAsync(this.name);
+    return ExpoFirebaseApp.deleteAppAsync(this._name);
   }
 
   /**
    * Returns the (read-only) configuration options for this app. These are the original parameters
    * the app was initialized with.
    */
-  getOptionsAsync(): Promise<FirebaseOptions> {
+  /*getOptionsAsync(): Promise<FirebaseOptions> {
     // @ts-ignore
     if (!ExpoFirebaseApp.getAppOptionsAsync) {
       throw new UnavailabilityError('expo-firebase-app', 'getAppOptionsAsync');
     }
     // @ts-ignore
-    return ExpoFirebaseApp.getAppOptionsAsync(this.name);
-  }
+    return ExpoFirebaseApp.getAppOptionsAsync(this._name);
+  }*/
 }
 
 /**
@@ -61,9 +76,8 @@ export async function initializeAppAsync(
   if (!ExpoFirebaseApp.initializeAppAsync) {
     throw new UnavailabilityError('expo-firebase-app', 'initializeAppAsync');
   }
-  // @ts-ignore
-  const appName = await ExpoFirebaseApp.initializeAppAsync(options, name);
-  return new FirebaseApp(appName);
+  const result = await ExpoFirebaseApp.initializeAppAsync(options, name);
+  return new FirebaseApp(result);
 }
 
 /**
@@ -78,9 +92,8 @@ export async function getAppAsync(name?: string): Promise<FirebaseApp> {
   if (!ExpoFirebaseApp.getAppAsync) {
     throw new UnavailabilityError('expo-firebase-app', 'getAppAsync');
   }
-  // @ts-ignore
-  const appName = await ExpoFirebaseApp.getAppAsync(name);
-  return new FirebaseApp(appName);
+  const result = await ExpoFirebaseApp.getAppAsync(name);
+  return new FirebaseApp(result);
 }
 
 /**
@@ -92,6 +105,6 @@ export async function getAppsAsync(): Promise<FirebaseApp[]> {
     throw new UnavailabilityError('expo-firebase-app', 'getAppsAsync');
   }
   // @ts-ignore
-  const appNames = await ExpoFirebaseApp.getAppsAsync();
-  return appNames.map(appName => new FirebaseApp(appName));
+  const results = await ExpoFirebaseApp.getAppsAsync();
+  return results.map(result => new FirebaseApp(result));
 }

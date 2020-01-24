@@ -1,22 +1,26 @@
 import { FirebaseOptions } from './FirebaseApp.types';
 export { FirebaseOptions } from './FirebaseApp.types';
 export * from './GoogleServices';
-export declare const DEFAULT_OPTIONS: any;
+export declare const DEFAULT_OPTIONS: any, DEFAULT_NAME: any;
+interface FirebaseAppConfig {
+    name: string;
+    options: FirebaseOptions;
+}
 declare class FirebaseApp {
     /**
-     * The (read-only) name for this app.
+     * The (read-only) options for this app.
      */
-    readonly name: string;
-    constructor(name: string);
+    name: string;
+    /**
+     * The (read-only) options for this app.
+     */
+    readonly options: FirebaseOptions;
+    constructor(config: FirebaseAppConfig);
+    get isDefault(): boolean;
     /**
      * Delete the Firebase app instance.
      */
     deleteAsync(): Promise<void>;
-    /**
-     * Returns the (read-only) configuration options for this app. These are the original parameters
-     * the app was initialized with.
-     */
-    getOptionsAsync(): Promise<FirebaseOptions>;
 }
 /**
  * Initializes a Firebase app.
