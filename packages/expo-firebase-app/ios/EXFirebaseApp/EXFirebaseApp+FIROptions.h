@@ -12,6 +12,6 @@
 
 + (BOOL) firOptionsIsEqualTo:(nonnull FIROptions*)firebaseOptions compareTo:(nonnull FIROptions*)compareTo;
 
-+ (void) updateFirAppWithOptions:(nullable FIROptions*)options name:(nullable NSString*)name completion:(nonnull FIRAppVoidBoolCallback)completion;
++ (void) updateAppWithOptions:(nullable FIROptions*)options name:(nonnull NSString*)name completion:(nonnull FIRAppVoidBoolCallback)completion;
 
 @end

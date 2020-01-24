@@ -5,6 +5,8 @@
 #import <EXFirebaseApp/EXFirebaseApp+FIROptions.h>
 #import <UMConstantsInterface/UMConstantsInterface.h>
 
+#define DEFAULT_APP_NAME @"__FIRAPP_DEFAULT"
+
 @interface EXFirebaseApp ()
 
 @property (nonatomic, weak) UMModuleRegistry *moduleRegistry;
@@ -20,38 +22,31 @@ UM_EXPORT_MODULE(ExpoFirebaseApp);
 {
   _moduleRegistry = moduleRegistry;
   _constants = [moduleRegistry getModuleImplementingProtocol:@protocol(UMConstantsInterface)];
-  FIROptions* firOptions = [self.class firOptionsWithGoogleServicesFile:self.googleServicesFile];
-  [self.class updateFirAppWithOptions:firOptions name:nil completion:^(BOOL success) {
-    // nop
-    /*if (!success) {
-      reject(@"ERR_FIREBASE_APP", @"Failed to initialize Firebase App", nil);
-    }*/
-  }];
+
+  NSString* name = [self getDefaultAppName];
+  FIROptions* options = [self getDefaultAppOptions];
   
-  // In the Expo client, also initialize a Firebase app called "expo".
-  // This app is used by the FaceDetector module when the default app is not available.
-  NSString* appOwnership = _constants ? _constants.constants[@"appOwnership"] : nil;
-  if ([@"expo" isEqualToString: appOwnership]) {
-    FIROptions* expoFirOptions = [self.class firOptionsWithGoogleServicesFile:self.googleServicesFileFromBundle];
-    [self.class updateFirAppWithOptions:expoFirOptions name:@"expo" completion:^(BOOL success) {
+  // Delete all previously created apps
+  // TODO
+  
+  // Initialize app
+  if (name && options) {
+    [self.class updateAppWithOptions:options name:name completion:^(BOOL success) {
       // nop
       /*if (!success) {
         reject(@"ERR_FIREBASE_APP", @"Failed to initialize Firebase App", nil);
       }*/
     }];
   }
-}
-
-// TODO - Hein, created a Scoped class that overrides the googleServicesFile
-// and loads from manifest when possible?
-- (nullable NSDictionary*)googleServicesFile
-{
-  NSString* appOwnership = _constants ? _constants.constants[@"appOwnership"] : nil;
+  
+  // In the Expo client, also initialize a Firebase app called "expo".
+  // This app is used by the FaceDetector module when the default app is not available.
+  /*NSString* appOwnership = _constants ? _constants.constants[@"appOwnership"] : nil;
   if ([@"expo" isEqualToString: appOwnership]) {
-    return self.googleServicesFileFromManifest;
-  } else {
-    return self.googleServicesFileFromBundle;
-  }
+    FIROptions* expoFirOptions = [self.class firOptionsWithGoogleServicesFile:self.googleServicesFileFromBundle];
+    [self.class updateFirAppWithOptions:expoFirOptions name:@"expo" completion:^(BOOL success) {
+    }];
+  }*/
 }
 
 - (nullable NSDictionary*)googleServicesFileFromBundle
@@ -78,14 +73,16 @@ UM_EXPORT_MODULE(ExpoFirebaseApp);
 
 - (NSDictionary *)constantsToExport
 {
-  FIROptions* firOptions = [self.class firOptionsWithGoogleServicesFile:self.googleServicesFile];
-  if (firOptions) {
-    return @{
-      @"DEFAULT_OPTIONS": [self.class firOptionsToJSON:firOptions]
-    };
-  } else {
-    return @{};
+  NSMutableDictionary* constants = [NSMutableDictionary dictionaryWithDictionary:@{
+    @"DEFAULT_NAME": [self getDefaultAppName]
+  }];
+  
+  FIROptions* options = [self getDefaultAppOptions];
+  if (options) {
+    [constants setObject:[self.class firOptionsToJSON:options] forKey:@"DEFAULT_OPTIONS"];
   }
+  
+  return constants;
 }
 
 - (void)reject:(UMPromiseRejectBlock)reject withException:(NSException *)exception {
@@ -98,23 +95,80 @@ UM_EXPORT_MODULE(ExpoFirebaseApp);
 
 - (nullable FIRApp *)getAppOrReject:(NSString*)name reject:(UMPromiseRejectBlock)reject
 {
-  FIRApp *app = name ? [FIRApp appNamed:name] : [FIRApp defaultApp];
+  if (name == nil) {
+    name = [self getDefaultAppName];
+  }
+  
+  if (![self isAppAccessible:name]) {
+    reject(@"ERR_FIREBASE_APP", @"The Firebase app is not accessible.", nil);
+    return nil;
+  }
+  
+  FIRApp *app = [FIRApp appNamed:name];
   if (app != nil) return app;
-  reject(@"ERR_FIREBASE_APP", @"The 'default' Firebase app is not initialized. Ensure your app has a valid GoogleService-Info.plist bundled and your project has react-native-unimodules installed. Optionally in the Expo client you can initialized the default app with initializeAppDangerously().", nil);
+  reject(@"ERR_FIREBASE_APP", @"The 'default' Firebase app is not initialized. Ensure your app has a valid GoogleService-Info.plist bundled and your project has react-native-unimodules installed.", nil);
   return nil;
 }
 
+- (nonnull NSString*) getDefaultAppName
+{
+  NSString* appOwnership = _constants ? _constants.constants[@"appOwnership"] : nil;
+  if ([@"expo" isEqualToString: appOwnership]) {
+    // TODO
+    return @"__sandbox.todoExperienceId";
+  }
+  return DEFAULT_APP_NAME;
+}
+
+- (nullable FIROptions*) getDefaultAppOptions
+{
+  NSString* appOwnership = _constants ? _constants.constants[@"appOwnership"] : nil;
+  NSDictionary* googleServicesFile = [@"expo" isEqualToString: appOwnership]
+    ? self.googleServicesFileFromManifest
+    : self.googleServicesFileFromBundle;
+  return [self.class firOptionsWithGoogleServicesFile:googleServicesFile];
+}
+
+- (BOOL) isAppAccessible:(nonnull NSString*)name
+{
+  // Deny access to the Default app on sandboxed environments
+  NSString* appOwnership = _constants ? _constants.constants[@"appOwnership"] : nil;
+  if ([@"expo" isEqualToString: appOwnership]) {
+    if ([name isEqualToString:DEFAULT_APP_NAME]) {
+      return NO;
+    }
+  }
+  return YES;
+}
+
 UM_EXPORT_METHOD_AS(initializeAppAsync,
-                    initializeAppAsync:(nullable NSDictionary *)config
+                    initializeAppAsync:(nullable NSDictionary *)json
                     name:(nullable NSString*)name
                     resolve:(UMPromiseResolveBlock)resolve
                     reject:(UMPromiseRejectBlock)reject)
 {
+  if (name && !json) {
+    reject(@"ERR_FIREBASE_APP", @"No options provided for custom app", nil);
+    return;
+  }
+  if (!name) {
+    name = [self getDefaultAppName];
+    if (!name) {
+      reject(@"ERR_FIREBASE_APP", @"No `GoogleService-Info.plist` configured", nil);
+      return;
+    }
+  }
+  if ([self isAppAccessible:name]) {
+    reject(@"ERR_FIREBASE_APP", @"Access to the Firebase App is forbidden", nil);
+    return;
+  }
+  
+  FIROptions* options = json
+    ? [self.class firOptionsWithJSON:json]
+    : [self getDefaultAppOptions];
+  
   [UMUtilities performSynchronouslyOnMainThread:^{
-    FIROptions* firOptions = config
-      ? [self.class firOptionsWithJSON:config]
-      : [self.class firOptionsWithGoogleServicesFile:self.googleServicesFile];
-    [self.class updateFirAppWithOptions:firOptions name:name completion:^(BOOL success) {
+    [self.class updateAppWithOptions:options name:name completion:^(BOOL success) {
       if (success) {
         resolve([NSNull null]);
       } else {
@@ -131,7 +185,10 @@ UM_EXPORT_METHOD_AS(getAppAsync,
 {
   FIRApp* app = [self getAppOrReject:name reject:reject];
   if (!app) return;
-  resolve(app.name);
+  resolve(@{
+    @"name": app.name,
+    @"options": [self.class firOptionsToJSON:app.options]
+  });
 }
 
 UM_EXPORT_METHOD_AS(getAppsAsync,
@@ -139,8 +196,20 @@ UM_EXPORT_METHOD_AS(getAppsAsync,
                     reject:(UMPromiseRejectBlock)reject)
 {
   @try {
-    NSArray<NSString*>* names = [[FIRApp allApps]allKeys];
-    resolve(names ? names : @[]);
+    NSDictionary<NSString *,FIRApp *>* apps = [FIRApp allApps];
+    NSArray<NSString*>* names = [apps allKeys];
+    NSMutableArray* results = [NSMutableArray arrayWithCapacity:names.count];
+    for (int i = 0; i < names.count; i++) {
+      NSString* name = names[i];
+      if ([self isAppAccessible:name]) {
+        FIRApp* app = apps[name];
+        [results addObject:@{
+          @"name": name,
+          @"options": [self.class firOptionsToJSON:app.options]
+        }];
+      }
+    }
+    resolve(results);
   } @catch (NSException *exception) {
     [self reject:reject withException:exception];
   }
@@ -162,6 +231,7 @@ UM_EXPORT_METHOD_AS(deleteAppAsync,
   }];
 }
 
+/*
 UM_EXPORT_METHOD_AS(getAppOptionsAsync,
                     getAppOptionsAsync:(NSString*)name
                     resolve:(UMPromiseResolveBlock)resolve
@@ -174,6 +244,6 @@ UM_EXPORT_METHOD_AS(getAppOptionsAsync,
   } @catch (NSException *exception) {
     [self reject:reject withException:exception];
   }
-}
+}*/
 
 @end

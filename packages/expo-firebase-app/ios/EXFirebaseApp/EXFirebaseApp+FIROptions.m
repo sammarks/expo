@@ -81,50 +81,26 @@
     return firOptions;
 }
 
-+ (void) updateFirAppWithOptions:(nullable FIROptions*)options name:(nullable NSString*)name completion:(nonnull FIRAppVoidBoolCallback)completion
++ (void) updateAppWithOptions:(nullable FIROptions*)options name:(nonnull NSString*)name completion:(nonnull FIRAppVoidBoolCallback)completion
 {
   // Default app
-  if (!name) {
-    FIRApp* app = [FIRApp defaultApp];
-    if (!options) {
-      if (app) {
-        [app deleteApp:completion];
-        return;
-      }
-    } else {
-      if (app) {
-        if (![self.class firOptionsIsEqualTo:app.options compareTo:options]) {
-          [app deleteApp:^(BOOL success) {
-            [FIRApp configureWithOptions:options];
-            completion(YES);
-          }];
-          return;
-        }
-      } else {
-        [FIRApp configureWithOptions:options];
-      }
+  FIRApp* app = [FIRApp appNamed:name];
+  if (!options) {
+    if (app) {
+      [app deleteApp:completion];
+      return;
     }
-
-  // Handle custom app names
   } else {
-    FIRApp* app = [FIRApp appNamed:name];
-    if (!options) {
-      if (app) {
-        [app deleteApp:completion];
+    if (app) {
+      if (![self.class firOptionsIsEqualTo:app.options compareTo:options]) {
+        [app deleteApp:^(BOOL success) {
+          [FIRApp configureWithName:name options:options];
+          completion(YES);
+        }];
         return;
       }
     } else {
-      if (app) {
-        if (![self.class firOptionsIsEqualTo:app.options compareTo:options]) {
-          [app deleteApp:^(BOOL success) {
-            [FIRApp configureWithName:name options:options];
-            completion(YES);
-          }];
-          return;
-        }
-      } else {
-        [FIRApp configureWithName:name options:options];
-      }
+      [FIRApp configureWithName:name options:options];
     }
   }
   completion(YES);
