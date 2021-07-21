@@ -39,22 +39,22 @@ static NSString *AUTO_INIT_KEY = @"autoInitEnabled";
 
 @end
 
-// Expo client-only EXFacebook module, which ensures that Facebook SDK configurations
-// of different experiences don't collide.
+// Expo Go-only EXFacebook module, which ensures that Facebook SDK configurations
+// of different projects don't collide.
 
 @implementation EXScopedFacebook : EXFacebook
 
-- (instancetype)initWithExperienceId:(NSString *)experienceId andParams:(NSDictionary *)params
+- (instancetype)initWithScopeKey:(NSString *)scopeKey manifest:(EXUpdatesRawManifest *)manifest
 {
   if (self = [super init]) {
-    NSString *suiteName = [NSString stringWithFormat:@"%@#%@", NSStringFromClass(self.class), experienceId];
+    NSString *suiteName = [NSString stringWithFormat:@"%@#%@", NSStringFromClass(self.class), scopeKey];
     _settings = [[NSUserDefaults alloc] initWithSuiteName:suiteName];
 
     BOOL hasPreviouslySetAutoInitEnabled = [_settings boolForKey:AUTO_INIT_KEY];
-    BOOL manifestDefinesAutoInitEnabled = [params[@"manifest"][@"facebookAutoInitEnabled"] boolValue];
+    BOOL manifestDefinesAutoInitEnabled = manifest.facebookAutoInitEnabled;
     
     NSString *scopedFacebookAppId = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"FacebookAppID"];
-    NSString *manifestFacebookAppId = params[@"manifest"][@"facebookAppId"];
+    NSString *manifestFacebookAppId = manifest.facebookAppId;
 
     if (hasPreviouslySetAutoInitEnabled || manifestDefinesAutoInitEnabled) {
       // This happens even before the app foregrounds, which mimics
@@ -64,7 +64,7 @@ static NSString *AUTO_INIT_KEY = @"autoInitEnabled";
         [FBSDKApplicationDelegate initializeSDK:nil];
         _isInitialized = YES;
         if (manifestFacebookAppId) {
-          UMLogInfo(@"Overriding Facebook App ID with the Expo Client's. To test your own Facebook App ID, you'll need to build a standalone app. Refer to our documentation for more info- https://docs.expo.io/versions/latest/sdk/facebook/");
+          UMLogInfo(@"Overriding Facebook App ID with Expo Go's. To test your own Facebook App ID, you'll need to build a standalone app. Refer to our documentation for more info- https://docs.expo.io/versions/latest/sdk/facebook/");
         }
       } else {
         UMLogWarn(@"FacebookAutoInit is enabled, but no FacebookAppId has been provided. Facebook SDK initialization aborted.");
@@ -80,7 +80,7 @@ static NSString *AUTO_INIT_KEY = @"autoInitEnabled";
 {
   _isInitialized = YES;
   if (options[@"appId"]) {
-    UMLogInfo(@"Overriding Facebook App ID with the Expo Client's. To test your own Facebook App ID, you'll need to build a standalone app. Refer to our documentation for more info- https://docs.expo.io/versions/latest/sdk/facebook/");
+    UMLogInfo(@"Overriding Facebook App ID with Expo Go's. To test your own Facebook App ID, you'll need to build a standalone app. Refer to our documentation for more info- https://docs.expo.io/versions/latest/sdk/facebook/");
   }
 
   NSString *scopedFacebookAppId = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"FacebookAppID"];
@@ -136,6 +136,8 @@ static NSString *AUTO_INIT_KEY = @"autoInitEnabled";
 
 - (void)setModuleRegistry:(UMModuleRegistry *)moduleRegistry
 {
+  [super setModuleRegistry:moduleRegistry];
+  
   id<UMAppLifecycleService> appLifecycleService = [moduleRegistry getModuleImplementingProtocol:@protocol(UMAppLifecycleService)];
   [appLifecycleService registerAppLifecycleListener:self];
 }

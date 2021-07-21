@@ -8,6 +8,8 @@ import PlatformsSection from '~/components/plugins/PlatformsSection';
 
 **`expo-media-library`** provides access to the user's media library, allowing them to access their existing images and videos from your app, as well as save new ones. You can also subscribe to any updates made to the user's media library.
 
+> ⚠️ If your Android app created an album using SDK <= 40 and you want to add more assets to this album, you may need to migrate it to the new scoped directory. Otherwise, your app won't have access to the old album directory and expo-media-library won't be able to add new assets to it. However, all other functions will work without problems. You only need to migrate the old album if you want to add something to it. For more information, check out [Android R changes](https://expo.fyi/android-r) and [`MediaLibrary.migrateAlbumIfNeededAsync`](#medialibrarymigratealbumifneededasyncalbum).
+
 <PlatformsSection android emulator ios simulator />
 
 ## Installation
@@ -16,7 +18,7 @@ import PlatformsSection from '~/components/plugins/PlatformsSection';
 
 ## Configuration
 
-In managed apps, the permission to access images or videos ([`Permissions.CAMERA_ROLL`](permissions.md#permissionscamera_roll)) is added automatically.
+In managed apps, the permission to access images or videos is added automatically.
 
 ## API
 
@@ -28,7 +30,7 @@ import * as MediaLibrary from 'expo-media-library';
 
 ### `MediaLibrary.requestPermissionsAsync()`
 
-Asks the user to grant permissions for accessing media in user's media library. Alias for `Permissions.askAsync(Permissions.CAMERA_ROLL)`.
+Asks the user to grant permissions for accessing media in user's media library.
 
 #### Returns
 
@@ -36,11 +38,19 @@ A promise that resolves to an object of type [CameraRollPermissionResponse](#med
 
 ### `MediaLibrary.getPermissionsAsync()`
 
-Checks user's permissions for accessing media library. Alias for `Permissions.getAsync(Permissions.CAMERA_ROLL)`.
+Checks user's permissions for accessing media library.
 
 #### Returns
 
 A promise that resolves to an object of type [CameraRollPermissionResponse](#medialibrarycamerarollpermissionresponse).
+
+### `MediaLibrary.isAvailableAsync()`
+
+Returns whether the Media Library API is enabled on the current device
+
+#### Returns
+
+Async `boolean`, indicating whether the Media Library API is available on the current device.
 
 ### `MediaLibrary.presentPermissionsPickerAsync()`
 
@@ -79,6 +89,43 @@ On **iOS 11+**, it's possible to use this method without asking for `CAMERA_ROLL
 
 - **localUri (_string_)** -- A URI to the image or video file. It must contain an extension. On Android it must be a local path, so it must start with `file:///`.
 
+### `MediaLibrary.albumNeedsMigrationAsync(album)`
+
+Checks if the album should be migrated to a different location. In other words, it checks if the application has the write permission to the album folder. If not, it returns `true`, otherwise `false`.
+
+For **Android below R**, **web** or **iOS**, this function always returns `false`.
+
+#### Arguments
+
+- **album (_string_ | _Album_)** -- [Album](#album) or its ID.
+
+#### Returns
+
+Returns a promise resolving to `true` if the album should be migrated.
+
+### `MediaLibrary.migrateAlbumIfNeededAsync(album)`
+
+Moves album content to the special media directories on **Android R** or **above** if needed.
+Those new locations are in line with the Android `scoped storage` - so your application won't lose write permission to those directories in the future.
+
+This method does nothing if:
+
+- app is running on **iOS**, **web** or **Android below R**
+- app has **write permission** to the album folder
+
+The migration is possible when the album contains only compatible files types.
+For instance, movies and pictures are compatible with each other, but music and pictures are not.
+If automatic migration isn't possible, the function will be rejected.
+In that case, you can use methods from the `expo-file-system` to migrate all your files manually.
+
+#### Why do you need to migrate files?
+
+**Android R** introduced a lot of changes in the storage system. Now applications can't save anything to the root directory. The only available locations are from the `MediaStore` API. Unfortunately, the media library stored albums in folders for which, because of those changes, the application doesn't have permissions anymore. However, it doesn't mean you need to migrate all your albums. If your application doesn't add assets to albums, you don't have to migrate. Everything will work as it used to. You can read more about scoped storage in [the Android documentation](https://developer.android.com/about/versions/11/privacy/storage).
+
+#### Arguments
+
+- **album (_string_ | _Album_)** -- [Album](#album) or its ID to migrate .
+
 ### `MediaLibrary.getAssetsAsync(options)`
 
 Fetches a page of assets matching the provided criteria.
@@ -108,7 +155,7 @@ A promise that resolves to an object that contains following keys:
 
 ### `MediaLibrary.getAssetInfoAsync(asset, options)`
 
-Provides more informations about an asset, including GPS location, local URI and EXIF metadata.
+Provides more information about an asset, including GPS location, local URI and EXIF metadata.
 
 #### Arguments
 
@@ -233,6 +280,7 @@ Subscribes for updates in user's media library.
 #### Arguments
 
 - **listener (_function_)** -- A callback that is fired when any assets have been inserted or deleted from the library, or when the user changes which assets they're allowing access to. **On Android** it's invoked with an empty object. **On iOS** it's invoked with an object containing following keys:
+
   - **hasIncrementalChanges (_boolean_)** -- Whether the media library's changes could be described as "incremental changes". `true` indicates the changes are described by the `insertedAssets`, `deletedAssets` and `updatedAssets` values. `false` indicates that the scope of changes is too large and you should perform a full assets reload (eg. a user has changed access to individual assets in the media library).
 
   Available only if `hasIncrementalChanges` is `true`:

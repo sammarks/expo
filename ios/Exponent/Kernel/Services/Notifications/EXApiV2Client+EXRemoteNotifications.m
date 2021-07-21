@@ -17,7 +17,7 @@
     @"deviceToken": deviceToken.apnsTokenString,
     @"type": @"apns",
   }];
-  // Presence of this file is assured in Expo client
+  // Presence of this file is assured in Expo Go
   // and in ejected projects Expo Push Notifications don't work anyway
   // so this codepath shouldn't be executed at all.
 #if __has_include(<EXApplication/EXProvisioningProfile.h>)
@@ -39,18 +39,18 @@
 }
 
 
-- (NSURLSessionTask *)getExpoPushTokenForExperience:(NSString *)experienceId
+- (NSURLSessionTask *)getExpoPushTokenForExperience:(NSString *)experienceStableLegacyId
                                         deviceToken:(NSData *)deviceToken
                                   completionHandler:(void (^)(NSString * _Nullable, NSError * _Nullable))handler
 {
   NSMutableDictionary *arguments = [NSMutableDictionary dictionaryWithDictionary:@{
     @"deviceId": [EXKernel deviceInstallationUUID],
-    @"experienceId": experienceId,
+    @"experienceId": experienceStableLegacyId,
     @"appId": NSBundle.mainBundle.bundleIdentifier,
     @"deviceToken": deviceToken.apnsTokenString,
     @"type": @"apns",
   }];
-  // Presence of this file is assured in Expo client
+  // Presence of this file is assured in Expo Go
   // and in ejected projects Expo Push Notifications don't work anyway
   // so this codepath shouldn't be executed at all.
 #if __has_include(<EXApplication/EXProvisioningProfile.h>)

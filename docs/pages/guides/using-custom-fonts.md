@@ -1,5 +1,5 @@
 ---
-title: Using Custom Fonts
+title: Fonts
 ---
 
 import SnackInline from '~/components/plugins/SnackInline';
@@ -19,8 +19,14 @@ $ expo install expo-font @expo-google-fonts/inter
 
 After that, you can integrate this in your project by using the `useFonts` hook in the root of your app.
 
-```js
+<SnackInline
+label="Google Fonts"
+dependencies={['expo-app-loading', '@expo-google-fonts/inter']}>
+
+```jsx
 import React from 'react';
+import { View, Text } from 'react-native';
+import AppLoading from 'expo-app-loading';
 import { useFonts, Inter_900Black } from '@expo-google-fonts/inter';
 
 export default function App() {
@@ -30,11 +36,17 @@ export default function App() {
 
   if (!fontsLoaded) {
     return <AppLoading />;
+  } else {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontFamily: 'Inter_900Black', fontSize: 40 }}>Inter Black</Text>
+      </View>
+    );
   }
-
-  return <Text style={{ fontFamily: 'Inter_900Black' }}>Inter Black</Text>;
 }
 ```
+
+</SnackInline>
 
 ## A minimal but complete working example
 
@@ -42,15 +54,15 @@ To create a new project including this example, run `npx create-react-native-app
 
 <SnackInline
 label="Custom Font"
-dependencies={['expo-font']}
+dependencies={['expo-font', 'expo-app-loading']}
 files={{
     'assets/fonts/Inter-Black.otf': 'https://snack-code-uploads.s3.us-west-1.amazonaws.com/~asset/44b1541a96341780b29112665c66ac67'
   }}>
 
-```js
+```jsx
 import React from 'react';
 import { Text, View } from 'react-native';
-import { AppLoading } from 'expo';
+import AppLoading from 'expo-app-loading';
 import { useFonts } from 'expo-font';
 
 export default props => {
@@ -158,12 +170,12 @@ To do this, just replace the `require('./assets/fonts/MyFont.otf')` with the URL
 
 Here is a minimal, complete example.
 
-<SnackInline label='Remote Font' dependencies={['expo-font']}>
+<SnackInline label='Remote Font' dependencies={['expo-font', 'expo-app-loading']}>
 
-```js
+```jsx
 import React from 'react';
 import { Text, View } from 'react-native';
-import { AppLoading } from 'expo';
+import AppLoading from 'expo-app-loading';
 import { useFonts } from 'expo-font';
 
 export default props => {
@@ -193,15 +205,15 @@ If you don't want to use the `useFonts` hook (for example, maybe you prefer clas
 
 <SnackInline
 label="Font loadAsync"
-dependencies={['expo-font']}
+dependencies={['expo-font', 'expo-app-loading']}
 files={{
     'assets/fonts/Inter-Black.otf': 'https://snack-code-uploads.s3.us-west-1.amazonaws.com/~asset/44b1541a96341780b29112665c66ac67'
   }}>
 
-```js
+```jsx
 import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
-import { AppLoading } from 'expo';
+import AppLoading from 'expo-app-loading';
 import * as Font from 'expo-font';
 
 let customFonts = {

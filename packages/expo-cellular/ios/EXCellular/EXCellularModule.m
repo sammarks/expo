@@ -8,15 +8,15 @@
 
 @interface EXCellularModule ()
 
-@property (nonatomic, weak) UMModuleRegistry *moduleRegistry;
+@property (nonatomic, weak) EXModuleRegistry *moduleRegistry;
 
 @end
 
 @implementation EXCellularModule
 
-UM_EXPORT_MODULE(ExpoCellular);
+EX_EXPORT_MODULE(ExpoCellular);
 
-- (void)setModuleRegistry:(UMModuleRegistry *)moduleRegistry
+- (void)setModuleRegistry:(EXModuleRegistry *)moduleRegistry
 {
   _moduleRegistry = moduleRegistry;
 }
@@ -24,17 +24,17 @@ UM_EXPORT_MODULE(ExpoCellular);
 - (NSDictionary *)constantsToExport
 {
   CTCarrier *carrier = [self carrier];
-  
+
   return @{
            @"allowsVoip": @(carrier.allowsVOIP),
-           @"carrier": UMNullIfNil(carrier.carrierName),
-           @"isoCountryCode": UMNullIfNil(carrier.isoCountryCode),
-           @"mobileCountryCode": UMNullIfNil(carrier.mobileCountryCode),
-           @"mobileNetworkCode": UMNullIfNil(carrier.mobileNetworkCode),
+           @"carrier": EXNullIfNil(carrier.carrierName),
+           @"isoCountryCode": EXNullIfNil(carrier.isoCountryCode),
+           @"mobileCountryCode": EXNullIfNil(carrier.mobileCountryCode),
+           @"mobileNetworkCode": EXNullIfNil(carrier.mobileNetworkCode),
            };
 }
 
-UM_EXPORT_METHOD_AS(getCellularGenerationAsync, getCellularGenerationAsyncWithResolver:(UMPromiseResolveBlock)resolve rejecter:(UMPromiseRejectBlock)reject)
+EX_EXPORT_METHOD_AS(getCellularGenerationAsync, getCellularGenerationAsyncWithResolver:(EXPromiseResolveBlock)resolve rejecter:(EXPromiseRejectBlock)reject)
 {
   resolve(@([[self class] getCellularGeneration]));
 }
@@ -74,17 +74,19 @@ UM_EXPORT_METHOD_AS(getCellularGenerationAsync, getCellularGenerationAsyncWithRe
 - (CTCarrier *)carrier
 {
   CTTelephonyNetworkInfo *netinfo = [[CTTelephonyNetworkInfo alloc] init];
-  NSDictionary<NSString *, CTCarrier *> *serviceSubscriberCellularProviders;
-  CTCarrier *carrier;
-  
+
   if (@available(iOS 12.0, *)) {
-    serviceSubscriberCellularProviders = netinfo.serviceSubscriberCellularProviders;
-    carrier = serviceSubscriberCellularProviders.allValues.firstObject;
-  } else {
-    carrier = netinfo.subscriberCellularProvider;
+    for (NSString *key in netinfo.serviceSubscriberCellularProviders) {
+      CTCarrier *carrier = netinfo.serviceSubscriberCellularProviders[key];
+      if (carrier.carrierName != nil) {
+        return carrier;
+      }
+    }
+
+    return [[netinfo.serviceSubscriberCellularProviders objectEnumerator] nextObject];
   }
-  
-  return carrier;
+
+  return netinfo.subscriberCellularProvider;
 }
 
 @end

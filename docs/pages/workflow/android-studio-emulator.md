@@ -2,19 +2,23 @@
 title: Android Studio Emulator
 ---
 
+import ImageSpotlight from '~/components/plugins/ImageSpotlight'
+
 If you don't have an Android device available to test with, we recommend using the default emulator that comes with Android Studio. If you run into any problems setting it up, follow the steps in this guide.
 
 ## Step 1: Set up Android Studio's tools
 
 - [Download](https://developer.android.com/studio) and install Android Studio 3.0+.
 
-- Go to Preferences -> Appearance & Behavior -> System Settings -> Android SDK. Click on the "SDK Tools" tab and make sure you have at least one version of the "Android SDK Build-Tools" installed.
+- Select "Standard" for the "Install Type" inside the wizard.
 
-![Android SDK location](/static/images/android-studio-build-tools.png)
+- Inside Android Studio, go to Preferences > Appearance & Behavior > System Settings > Android SDK. Click on the "SDK Tools" tab and make sure you have at least one version of the "Android SDK Build-Tools" installed.
+
+<ImageSpotlight alt="Android SDK build tools" src="/static/images/android-studio-build-tools.png" containerStyle={{ paddingBottom: 0 }} />
 
 - Copy or remember the path listed in the box that says "Android SDK Location."
 
-![Android SDK location](/static/images/android-studio-sdk-location.png)
+<ImageSpotlight alt="Android SDK location" src="/static/images/android-studio-sdk-location.png" containerStyle={{ paddingBottom: 0 }} />
 
 - If you are on macOS or Linux, add an environment variable pointing to the Android SDK location in `~/.bash_profile` (or `~/.zshenv` if you use Zsh) - eg. `export ANDROID_SDK=/your/path/here`. Copy and paste these two lines to do this automatically for Bash and Zsh:
 
@@ -33,11 +37,13 @@ echo "export PATH=$HOME/Library/Android/sdk/platform-tools:\$PATH" >> ~/`[[ $SHE
 
 ## Step 2: Set up a virtual device
 
-- From the Android Studio main screen, go to `Tools -> AVD Manager`.
+- On the Android Studio main screen, click "Configure", then "AVD Manager" in the dropdown.
+
+<ImageSpotlight alt="Android Studio configure" src="/static/images/android-studio-configure.png" containerStyle={{ paddingBottom: 0 }} />
 
 - Press the "+ Create Virtual Device" button.
 
-![Android SDK location](/static/images/android-studio-avd-manager.png)
+<ImageSpotlight alt="Android Studio create virtual device" src="/static/images/android-studio-avd-manager.png" containerStyle={{ paddingBottom: 0 }} />
 
 - Choose the type of hardware you'd like to emulate. We recommend testing against a variety of devices, but if you're unsure where to start, the newest device in the Pixel line could be a good choice.
 
